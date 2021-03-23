@@ -1,20 +1,24 @@
 ﻿using NetMQ;
 using NetMQ.Sockets;
 using Shared;
+using Shared.Extensions;
 using System;
 
 namespace Broker
 {
     class Program
     {
+        private static readonly string SERVER_ADDRESS = "@tcp://127.0.0.1:5556";
+        private static readonly string PUBLISHER_ADDRESS = "tcp://*:12345";
+        private static readonly int MAXIMUM_POOL_SIZE = 1000;
+
         static void Main(string[] args)
         {
-            using (var server = new RouterSocket("@tcp://127.0.0.1:5556"))
+            using (var server = new RouterSocket(SERVER_ADDRESS))
             using (var pubSocket = new PublisherSocket())
             {
-                pubSocket.Options.SendHighWatermark = 1000;
-                pubSocket.Bind("tcp://*:12345");
-                var count = 0;
+                pubSocket.Options.SendHighWatermark = MAXIMUM_POOL_SIZE;
+                pubSocket.Bind(PUBLISHER_ADDRESS);
 
                 while (true)
                 {
@@ -24,13 +28,9 @@ namespace Broker
                     {
                         var clientAddress = clientMessage[0];
                         var clientOriginalMessage = clientMessage[2].ConvertToString();
-                        string response = string.Format("{0} back from server {1}",
-                            clientOriginalMessage, DateTime.Now.ToLongTimeString());
-                        var messageToClient = new NetMQMessage();
-                        messageToClient.Append(clientAddress);
-                        messageToClient.AppendEmptyFrame();
-                        messageToClient.Append(response);
-                        server.SendMultipartMessage(messageToClient);
+                        string response = string.Format("{0} back from server {1}", clientOriginalMessage, DateTime.Now.ToLongTimeString());
+
+                        server.SendMultipartMessage(response.ToMessage(clientAddress));
 
                         var register = Newtonsoft.Json.JsonConvert.DeserializeObject<Register>(clientOriginalMessage);
                         pubSocket.SendMoreFrame(register.Type).SendFrame(register.Payload);

@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 
 namespace Shared
 {
-    public interface IRegisterService
+    public interface IRegisterService<T>
     {
-        void SendMessage(Policy message);
+        void Send(T message);
     }
 }

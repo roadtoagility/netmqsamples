@@ -12,16 +12,16 @@ namespace ApiExample.Controllers
     [ApiController]
     public class RegisterController : ControllerBase
     {
-        IRegisterService _registerService;
-        public RegisterController(IRegisterService dealer)
+        MessageService<Policy> _registerService;
+        public RegisterController(MessageService<Policy> service)
         {
-            _registerService = dealer;
+            _registerService = service;
         }
 
         [HttpPost]
         public ActionResult<string> Send(Policy policy)
         {
-            _registerService.SendMessage(policy);
+            _registerService.Send(policy);
             return CreatedAtAction("Register", policy.Type);
         }
     }

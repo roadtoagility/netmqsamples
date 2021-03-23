@@ -29,7 +29,7 @@ namespace ApiExample
         {
             services.AddControllers();
 
-            services.AddScoped<IRegisterService, RegisterService>();
+            services.AddScoped<MessageService<Policy>, RegisterService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

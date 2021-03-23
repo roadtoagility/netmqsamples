@@ -1,29 +1,22 @@
 ﻿using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
+using Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Shared
 {
-    public class RegisterService : IRegisterService, IDisposable
+    public class RegisterService : MessageService<Policy>
     {
-        private DealerSocket _client = null;
         public RegisterService()
+            :base("tcp://127.0.0.1:5556")
         {
-            Start();
+            
         }
 
-        private void Start()
-        {
-            _client = new DealerSocket();
-            _client.Options.Identity = Encoding.Unicode.GetBytes(Guid.NewGuid().ToString());
-            _client.Connect("tcp://127.0.0.1:5556");
-            _client.ReceiveReady += Client_ReceiveReady;
-        }
-
-        void Client_ReceiveReady(object sender, NetMQSocketEventArgs e)
+        public override void Client_ReceiveReady(object sender, NetMQSocketEventArgs e)
         {
             NetMQMessage msg = e.Socket.ReceiveMultipartMessage();
             var isEmpty = msg.IsEmpty;
@@ -35,20 +28,13 @@ namespace Shared
             }
         }
 
-        public void SendMessage(Policy policy)
+        protected override void SendMessage(Policy policy)
         {
             var payload = JsonConvert.SerializeObject(policy);
             var register = new Register(policy.Type, payload);
-            var messageToServer = new NetMQMessage();
-            messageToServer.AppendEmptyFrame();
-            messageToServer.Append(JsonConvert.SerializeObject(register));
-            _client.SendMultipartMessage(messageToServer);
-        }
+            var message = JsonConvert.SerializeObject(register).ToMessage();
 
-        public void Dispose()
-        {
-            _client.Dispose();
-            _client = null;
+            Client.SendMultipartMessage(message);
         }
     }
 }
